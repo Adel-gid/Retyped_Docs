@@ -13,12 +13,11 @@ retyping. For authoritative versions, refer to the official sources.
 
 ## Document Matrix (4×4)
 
-|                         |       |       |       |
-|-------------------------|-------|-------|-------|
-| [rfc1951.rtf](./rfc1951.rtf) | -     | -     | -     |
-| -                       | -     | -     | -     |
-| -                       | -     | -     | -     |
-| -                       | -     | -     | -     |
+|[RFC1951](./rfc1951.rtf)|-|-|-|
+|-|-|-|-|
+|-|-|-|-|
+|-|-|-|-|
+|-|-|-|-|
 
 Additional entries will be added as more documents are retyped.
 
