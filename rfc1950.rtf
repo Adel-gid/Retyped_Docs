@@ -1,0 +1,333 @@
+{\rtf1\ansi\ansicpg1251\deff0\nouicompat\deflang1049{\fonttbl{\f0\fswiss\fprq2\fcharset0 Arial;}{\f1\fnil\fcharset0 Arial;}{\f2\fmodern\fprq1\fcharset0 Consolas;}{\f3\fnil\fcharset2 Symbol;}}
+{\*\generator Riched20 10.0.26100}\viewkind4\uc1 
+\pard\f0\fs18\lang1033 Network Working Group\par
+Request for Comments : 1950\par
+Category : Informational\par
+
+\pard\qr P. Deutsch\par
+Aladdin Enterprises\par
+J-L. Gailly\par
+Info-ZIP\par
+May 1996\par
+\par
+
+\pard\qc\b ZLIB Compressed Data Format Specification version 3.3\par
+\par
+
+\pard\b0 Status of This Memo\par
+
+\pard\li284 This memo provides information for the Internet community. This memo does not specify an Internet standard of any kind. Distribution of this memo is unlimited.\par
+\par
+
+\pard IESG Note :\par
+
+\pard\li284 The IESG takes no position on the validily of any Intellectual Property Rights statements contained in this document.\par
+\par
+
+\pard Notices\par
+
+\pard\li284\lang1049 Copyright (c) 1996 L. Peter Deutsch and Jean-Loup Gailly\par
+Permission is granted to copy and distribute this document for any purpose and without charge, including translations into other languages and incorporation into compilations, provided that the copyright notice and this notice are preserved, and that any substantive changes or deletions from the original are clearly marked.\par
+A pointer to the latest version of this and related documentation in HTML format can be found at the URL <\ul ftp://ftp.uu.net/graphics/png/documents/zlib/zdoc-index.html>.\par
+\par
+
+\pard\b Disclaimer\par
+
+\pard\li284\ulnone This document is a retyped version of RFC 1950 created by the author of the MASTER library, Adel'gid Aragami. It was reproduced using touch typing and may therefore contain typographical errors or inaccuracies when compared to the official text. For the authoritative version, refer to the original RFC available at \f1\lang1033 https://datatracker.ietf.org/doc/html/rfc1950.\ul\b0\f0\lang1049\par
+\par
+
+\pard\ulnone Abstract\par
+
+\pard\li284 This specification defines a lossless compressed data format. The data can be produced or consumed, even for an arbitrarily long sequentially presented input data stream, using only an a prioru bounded amount of intermediate storage. The format presently uses the DEFLATE compression method but can be easily extended to use other compression methods. It can be implemented readily in a manner not covered by patents. This specification also defines the ADLER-32 checksum (an extension and improvement of the Fletcher checksum), used for detection of data corruption, and provides an algorithm for computing it.\par
+\par
+
+\pard Table of Contents\par
+
+\pard\li284\ul 1\ulnone . Introduction\par
+
+\pard\li568\ul 1.1\ulnone . Purpose\par
+\ul 1.2\ulnone . Inteded audience\par
+\ul 1.3\ulnone . Score\par
+\ul 1.4\ulnone . Compliance\par
+\ul 1.5\ulnone . Definition of terms and conventions used\par
+\ul 1.6\ulnone . Changes from previous versions\par
+
+\pard\li284\ul 2\ulnone . Detailed specification\par
+
+\pard\li568\ul 2.1\ulnone . Overall conventions\par
+\ul 2.2\ulnone . Data format\par
+\ul 2.3\ulnone . Compliance\par
+
+\pard\li284\ul 3\ulnone . References\par
+\ul 4\ulnone . Source code\par
+\ul 5\ulnone . Security Considerations\par
+\ul 6\ulnone . Acknowledgements\par
+\ul 7\ulnone . Authors' Addresses\par
+\ul 8\ulnone . Appendix : Rationale\par
+\ul 9\ulnone . Appendix : Sample code\par
+\par
+
+\pard\ul\b 1\ulnone . Introduction\par
+
+\pard\li284\b0 1.1. Purpose\par
+
+\pard\li568 The purpose of this specification is to define a lossless compressed data format that :\par
+
+\pard{\pntext\f3\'B7\tab}{\*\pn\pnlvlblt\pnf3\pnindent0{\pntxtb\'B7}}\fi-152\li994 Is independent of CPU type, operating system, file system, and character set, and hence can be used for interchange;\par
+{\pntext\f3\'B7\tab}Can be produced or consumed, even for an arbitrarily long sequentially presented input data stream, using only an a priori bounded amount of intermediate storage, and hence can be used in data communications or similar structures such as Unix filters;\par
+{\pntext\f3\'B7\tab}Can use a number of different compression methods;\par
+{\pntext\f3\'B7\tab}Can be implemented readily in a manner not covered by patents, and hence can be practiced freely.\par
+
+\pard\li568 The data format defined by this specification does not attempt to allow random access to compressed data.\par
+\par
+
+\pard\li284\lang1041 1.2. Intended audience\par
+
+\pard\li568 This specification is indended for use by implementors of software to compress data into zlib  format and/or decompress data from zlib format.\par
+The text of the specification assumes a basic background in progtamming at tle level of bits and other primitive data representations.\par
+
+\pard\li284\par
+1.3. Scope\par
+
+\pard\li568 The specification specifies a compressed data format that can be used for in-memory compression of a sequence of arbitrary bytes.\par
+\par
+
+\pard\li284 1.4. Compliance\par
+
+\pard\li568 Unless otherwise indicated below, a compliant decompressor must be able to accept and decompress any data set that conforms to all the specifications presented here; a compliant compressor must produce data sets that conforn to all the specifications presented here.\par
+\par
+
+\pard\li284 1.5. Definitions of terms and conventions used\par
+
+\pard\li568 byte : 8 bits stored or transmissed as a unit (same as an octet). (For this specification, a byte is exactly 8 bits, even on machines which store a character on a number of bits different from 8.) See below, for the numbering within a byte.\par
+\par
+
+\pard\li284 1.6. Changes from previous versions\par
+
+\pard\li568 Version 3.1 was the first public release of this specification. In version 3.2, some terminology was changed and the Adler-32 sample code was rewritten for clarity. In version 3.3, the support for a preset dictionary was introduced, and the specification was converted to RFC style.\par
+\par
+
+\pard\ul\b 2\ulnone . Detailed specification\b0\par
+
+\pard\li284 2.1. Overall conventions\par
+
+\pard\li568 In the diagram below, a box like this :\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1032 
+\pard\intbl\li852\cell\row 
+\pard\li568\lang1049 represent one byte; a box like this :\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1032\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1212\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1392\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1572\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1752\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1932\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2112\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2292 
+\pard\intbl\cell\cell\cell\cell\cell\cell\cell\cell\row 
+\pard\li568 represent a variable number of bytes.\par
+Bytes stored within a computer do not have a "bit order", since they are always treated as a unit. However, a byte considered as an integer between 0 and 255 does have a most- and least- significant bit, and since we write numbers with the most- significant digit on the left, we also write bytes with the most-significant bit on the left. In the diagrams below, we number the bits of a byte so that bit 0 is the least-significant bit, i.e., the bits are numbered :\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1932 
+\pard\intbl\f2 76543210\f0\cell\row 
+\pard\li568 Within a computer, a number may occupt multiple bytes. All multi-byte numbers in the format described here are stored with the MOST-significant byte fitst (at the lower memory address). For example, the decimal number 520 is stored as :\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1887\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2897 
+\pard\intbl\qc\f2 0\cell 1\cell\row\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1887\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2897 
+\pard\intbl\qc\lang1033 00000010\par
+
+\pard\intbl ^\par
+|\par
+|\par
++ more significant byte  = 2 * 256\cell 
+\pard\intbl\qc 00001000\par
+
+\pard\intbl ^\par
+|\par
++ less significant byte = 8\cell\row 
+\pard\li284\f0\lang1049\par
+2.2. Data format\par
+
+\pard\li568 A zlib stream has the following structure :\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1377\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2882 
+\pard\intbl\qc\f2 0\cell 1\cell\row\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1377\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2882 
+\pard\intbl\lang1033 CMF\cell FLG (more-->)\cell\row 
+\pard\li568\f0\lang1049 (if FLG.FDICT set)\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2697 
+\pard\intbl\qc\f2 0 1 2 3\cell\row\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2697 
+\pard\intbl\lang1033 DICTID (more-->)\cell\row 
+\pard\li568\f0\lang1049\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3237\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4262 
+\pard\intbl\f2 ...compressed data...\f0\cell ADLER32\cell\row 
+\pard\li568 Any data which may appear after ADLER32 are not part of the zlib stream.\par
+
+\pard\fi-284\li852 CMF (Compression Method and flags)\par
+
+\pard\li852 This byte is divided inro a 4-bit compression method and a 4-bit information field depending on the compression method.\par
+\trowd\trgaph72\trleft1136\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2486\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3376\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5466 
+\pard\intbl\f2 bits 0 to 3\f0\cell CM\cell Compression method\cell\row\trowd\trgaph72\trleft1136\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2486\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3376\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5466 
+\pard\intbl\f2\lang1033 bits 4 to 7\cell\f0 CINFO\cell Compression info\cell\row 
+\pard\li568\lang1049 CM (Compression method)\par
+
+\pard\li852 This identifies the compression method used in the file. CM = 8 denotes the "deflate" compression method with a window size up to 32K. This is the method used by gzip and PNG (see references [\ul 1\ulnone ] and [\ul 2\ulnone ] in Chapter 3, below, for the reference documents). CM = 15 is reserved. It might be used in a future version of this specification to indicate the presence of an extra field before the compressed data.\par
+
+\pard\li568 CINFO (Compression info)\par
+
+\pard\li852 For CM = 8, CINFO is the base-2 logarithm of the LZ77 window size, minus eight (CINFO=7 indicates a 32K window size). Values of CINFO above 7 are not allowed in this version of the specification. CINFO is not defined in this specification for CM not equal to 8.\par
+
+\pard\li568 FLG (FLaGs)\par
+
+\pard\li852\sl240\slmult1 This flag byte is divided as follows :\par
+\trowd\trgaph72\trleft1136\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2486\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3346\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6411 
+\pard\intbl\f2 bits 0 to 4\cell FCHECK\cell (check bits for CMF and FLG)\cell\row\trowd\trgaph72\trleft1136\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2486\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3346\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6411 
+\pard\intbl\lang1033 bit 5\cell FDICT\cell (preset dictionary)\cell\row\trowd\trgaph72\trleft1136\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2486\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3346\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6411 
+\pard\intbl bits 6 to 7\cell FLEVEL\cell (compression level)\cell\row 
+\pard\li852\sl240\slmult1\f0\lang1049 The FCHECK value must be such that CMF and FLG, when viewed as a 16-bit unsigned integer stored in MSB order (CMF*256 + FLG), is a multiple of 31.\par
+
+\pard\li568\sl240\slmult1 FDICT (Preset dictionary)\par
+
+\pard\li852\sl240\slmult1 If FDICT is set, a DICT dictionary identifier is present immediately after the FLG byte. The dictionaty is a sequence of bytes which are initially fed to the compressor without producing any compessed output. DICT is the Adler-32 checksum of this sequence of bytes (see the definition of ADLER32 below). The decompressor can use this identifier to determine which dictionary has been used by the compressor).\par
+
+\pard\li568\sl240\slmult1 FLEVEL (Compression level)\par
+
+\pard\li852\sl240\slmult1 These flags are available for use by specific compression methods. The "deflate" method (CM = 8) sets these flags as follows :\par
+
+\pard\li1136\sl240\slmult1 0 - compressor used fastest algorithm\par
+1 - compressor used fast algorithm\par
+2 - compressor used default algorithm\par
+3 - compressor used maximum compression, slowest algorithm\par
+
+\pard\li852\sl240\slmult1 The information in FLEVEL is not needed for decompression; it is there to indicate if recompression might be worthwhile.\par
+
+\pard\li568\sl240\slmult1 compressed data\par
+
+\pard\li852\sl240\slmult1 Fore compression method 8, the compressed data is stored in the deflate compressed data format as described in the document "DEFLATE Compressed Data Format Specification" by L. Peter Deutsch. (See reference [\ul 3\ulnone ] in Chapter 3, below).\par
+Other compressed data formats are not specified in this version of the zlib specification.\par
+
+\pard\li568\sl240\slmult1 ADLER32 (Adler-32 checksum)\par
+
+\pard\li852\sl240\slmult1 This contains a checksum value of the uncompressed data (excluding any dictionaty data) computed according to Adler-32 algorithm. This algotithm is a 32-bit extension and improvement of the Fletcher algorithm, used in the ITU-T X.224 / ISO 8073 standard. See references [\ul 4\ulnone ] and [\ul 5\ulnone ] in Chapter 3, below.\par
+Adler-32 is composed of two sums accumulated per byte : s1 is the sum of all bytes, s2 is the sum of all s1 values. Both sums are done modulo 65521. s1 is initialized to 1, s2 to zero. The Adler-32 checksum is stored as s2*65536 + s1 in most-significant +-byte first (network) order.\par
+
+\pard\li284\sl240\slmult1 2.3. Compliance\par
+
+\pard\li568\sl240\slmult1 A compliant compressor must produce streams with correct CMF, FLG and ADLER32, but need not support preset dictionaries. When the zlib data format is used as part of another standard data format, the compressor may use only preset dictionaries that are specified by this other data format. If this other format does not use the preset dictionary feature, the compressor must not set the FDICT flag.\par
+A compliant decompressor must check CMF, FLG and ADLER32, and provide an error indication if any of these have incorrect values. A compliant decompressor must give an error indication if CM is not one of the values defined in this specification (only the value 8 is permitted in this version), since another value could indicate the presence of new features that would cause subsequent data to be interpreted incorrectly. A compliant decompressor must give an error indication if FDICT is set and DICTID is not the identifier of a known preset dictionary. A decompressor may ignore FLEVEL and still be compliant. When the zlib data format is being used as a part of another standard format, a compliant decompressor must support all the preset dictionaries specified by the other format. When the other format does not use the preset dictionary feature, a compliant decompressor must reject any stream in which the FDICT flag is set.\par
+
+\pard\sl240\slmult1\par
+
+\pard\sl360\slmult1\ul\b 3\ulnone . References\par
+
+\pard\fi-284\li568\sl240\slmult1\b0 [1] Deutsch, L. P., "GZIP Compressed Data Format Specification", available in \ul ftp://ftp.uu.net/pub/archiving/zip/doc/\ulnone\par
+[2] Thomas Boutell, "PNG (Portable Network Graphics) specification", available in \ul ftp://ftp.uu.net/graphics/png/documents/\ulnone\par
+[3] Deutsch, L. P., "DEFLATE Compressed Data Format Specification", available in \ul ftp://ftp.uu.net/pub/archiving/zip/doc/\ulnone\par
+[4] Fletcher, J. G., "An Arithmetic Checksum for Serial Tranmissions," IEEE Transactions on Communications, Vol. COM-30, No. 1, January 1982, pp. 247-252.\par
+[5] ITU-T Recommendation X.224, Annex D, "Checksum Algorithms," November, 1993, pp144, 145. (Available from gopher://info.iru.ch). ITU-T X.244 is also the same as ISO 8073.\par
+
+\pard\sl360\slmult1\par
+\ul\b 4\ulnone . Source code\par
+
+\pard\li284\sl240\slmult1\b0 Source code for a C language implementaion of a "zlib" compliant library is available at \ul ftp://ftp.uu.net/pub/archiving/zip/zlib/\ulnone .\par
+
+\pard\li568\sl240\slmult1\par
+
+\pard\sl360\slmult1\ul\b 5\ulnone . Security Considerations\par
+
+\pard\li284\sl240\slmult1\b0 A decoder that fails to check the ADLER32 checksum value may be subject to undetected data corruption.\par
+\par
+
+\pard\sl360\slmult1\ul\b 6\ulnone . Acknowledgements\b0\par
+
+\pard\li284\sl240\slmult1 Trademarks cited in this document are the property of their respective owners.\par
+Jean-Loup Gailly and Mark Adler designed the zlib format and wrote the related software described in this specification. Glenn Randers-Perhson converted this document ro RFC and HTML format. Adel'gid Aragami, the author of MASTER library, is rewrote this document from scratch using touch typing in RTF format.\par
+\par
+
+\pard\sl360\slmult1\ul\b 7\ulnone . Authors' Addresses\par
+
+\pard\li284\sl240\slmult1\b0 L. Peter Deutsch\par
+Aladdin Enterprises\par
+203 Santa Margarita Ave.\par
+Menlo Park, CA 94025\par
+Phone : (415) 322-0103 (AM only)\par
+FAX : (415) 322-1734\par
+EMail : <ghost@aladdin.com>\par
+\par
+Jean-Loup Gailly\par
+EMail : <gzip@prep.ai.mit.edu>\par
+Questions about the technical content of this specification can be sent by email to\par
+Jean-Loup Gailly <gzip@prep.ai.mit.edu> and\par
+Mark Adler <madler@alumni.caltech.edu>\par
+Editorial comments on this specification can be sent by email to\par
+L. Peter Deutsch <ghost@aladdin.com> and\par
+Glenn Randers-Perhson <randeg@alumni.rpi.edu>\par
+\par
+
+\pard\sl360\slmult1\ul\b 8\ulnone . Appendix : Rationale\par
+
+\pard\li284\sl360\slmult1\b0 8.1. Preset dictionaries\par
+
+\pard\li568\sl240\slmult1\lang1041 A  preset dictionary is specially useful to compress short input sequences. The compressor can take advantage of the dictionary context to encode the input in a more compact manner. The decompressor can be initialized with the approptiate context by virtually decompressing a compressed version of the dictionary without producing any output. However for certain compression algorithms such as the deflate algorithm this operation can be achieved without actually performing any decompression.\par
+The compressor and the decompressor must use exactly the same dictionary. The dictionary may be fixed or may be chosen among a certain number of predefined dictionaries, according to the kind of input data. The decompressor can determine which dictionary has been chosen by the compressor by checking the dictionary identifier. This document does not specify the contents of predefined dictionaries, since the optimal dictionaries are application specific. Standard data formats using this feature of the zlib specification must precisely define the allowed dictionaries.\par
+\par
+
+\pard\li284\sl360\slmult1 8.2. The Adler-32 algorithm\par
+
+\pard\li568\sl240\slmult1 The Adler-32 algorithm is much faster than the CRC32 algorithm yet still provides an extremely low probability of undetected errors.\par
+The modulo on unsigned long accumulators can be delayed for 5552 bytes, so the modulo operation time is negligible. If the bytes are a, b, c, the second sum is 3a + 2b + c + 3, and so is position and order sensitive, unlike the first sum, which is just a checksum. That 65521 is prime is important to avoid a possible large class of two-byte erroes that leave the check unchanged. (The Fletcher checksum uses 255, which is not prime and which also makes the Fletcher check insensitive to single byte changes 0 <-> 255).\par
+The sum s1 is initialized to 1 instead of zero to make the length of the sequence part of s2, so that the length does not have to be checked separately. (Any sequence of zeroes has a Fletcher checksum of zero.)\par
+\par
+
+\pard\sl360\slmult1\ul\b 9\ulnone . Appendix : Sample code\par
+
+\pard\li284\sl240\slmult1\b0 The following C code computes the Adler-32 checksum of a data buffer. It is written for clarity, not for speed. The sample code is in the ANSI C programming language. Non C users may find it easier to read with these hints :\par
+\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx988\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx10378 
+\pard\intbl &\cell Bitwise AND operator.\cell\row\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx988\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx10378 
+\pard\intbl >>\cell Bitwise right shift operator. When applied to an unsigned quantity, as here, right shift inserts zero bit(s) at the left.\cell\row\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx988\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx10378 
+\pard\intbl <<\cell Bitwise left shift operator. Left shift inserts zero bit(s) at the right.\cell\row\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx988\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx10378 
+\pard\intbl ++\cell "n++" increments the variable n.\cell\row\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx988\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx10378 
+\pard\intbl %\cell modulo operator : a % b is the remainder of a divided by b.\cell\row 
+\pard\li284\sl240\slmult1\lang1049\par
+\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx10363 
+\pard\intbl\f2 #define BASE 65521 /* largest prime smaller that 65536 */\par
+\par
+/*\par
+  Update a running Adler-32 checksum with the bytes buf[0..len-1] and return the updated checksum. The Adler-32 checksum should be initialized to 1.\par
+\par
+Usage example :\par
+  unsigned long adler = 1L;\par
+  while (read_buffer(buffer, length) != EOF) \{\par
+    adler = update_adler32(adler, buffer, length);\par
+  \}\par
+  if (adler != original_adler) error();\par
+*/\par
+\par
+unsigned long update_adler32(unsigned long adler, unsigned char *buf, int len) \{\par
+  unsigned long s1 = adler & 0xFFFF;\par
+  unsigned long s2 = (adler >> 16) & 0xFFFF;\par
+  int n;\par
+  for (n = 0; n < len; n++) \{\par
+    s1 = (s1 + buf[n]) % BASE;\par
+    s2 = (s2 + s1) % BASE;\par
+  \}\par
+  return (s2 << 16) + s1;\par
+\}\par
+\par
+/* Return the adler32 of the bytes buf[0..len-1] */\par
+\par
+unsigned long adler32(unsigned char *buf, int len) \{\par
+  return update_adler32(1L, buf, len);\par
+\}\f0\cell\row 
+\pard\li284\sl240\slmult1\par
+}
+ 
