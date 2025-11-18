@@ -1,0 +1,404 @@
+{\rtf1\ansi\ansicpg1251\deff0\nouicompat\deflang1049{\fonttbl{\f0\fswiss\fprq2\fcharset0 Arial;}{\f1\fmodern\fprq1\fcharset0 Consolas;}{\f2\fnil\fcharset2 Symbol;}}
+{\*\generator Riched20 10.0.26100}\viewkind4\uc1 
+\pard\f0\fs18\lang1033 Network Working Group\par
+Request for Comments : 1952\par
+Category : Informational\par
+
+\pard\qr P. Deutsch\par
+Aladding Enterprises\par
+
+\pard\sl360\slmult1\qr May 1996\par
+
+\pard\sl360\slmult1\qc\b GZIP file format specification version 4.3\par
+
+\pard\sl360\slmult1\b0 Status of This Memo\par
+
+\pard\li284\sl240\slmult1 This memo provides information for the Internet community. This memo does not specify an Internet standard of any kind. Distribution of this memo is unlimited.\par
+\par
+
+\pard\sl360\slmult1\lang1049 IESG Note :\par
+
+\pard\li284\sl240\slmult1 The IESG takes no position on the validity of any Intellectual Property Rights statements contained in this document.\par
+\par
+
+\pard\sl360\slmult1 Notices\par
+
+\pard\li284\sl240\slmult1 Copyright (c) 1996 L. Peter Deutsch\par
+Permission is granted to copy and distribute this document for any purpose and without charge, including translations into other languages and incorporation into compilations, provided that the copyright notice and this notice are preseerved, and that any substantive changes or deletions from the original are clearly marked.\par
+A pointer to the latest version of this and related documentation in HTML format can be found at the URL \lang1033 <\ul ftp://ftp.uu.net/graphics/png/documents/zlib/zdoc-index.html\ulnone >.\par
+\par
+
+\pard\sl360\slmult1\ul\b Disclaimer\ulnone\par
+
+\pard\li284\sl240\slmult1 This document is a retyped version of RFC 1952 created by the author of the MASTER library, Adel'gid Aragami. It was reproduced using touch typing and may therefore contain typographical errors or inaccuracies when compared to the official text. For the authoritative version, refer to the original RFC available at https://datatracker.ietf.org/doc/html/rfc1952.\b0\par
+\par
+
+\pard\sl360\slmult1\lang1049 Abstract\par
+
+\pard\li284\sl240\slmult1 This specification defines a lossless compressed data format that is compatible with the widely used GZIP utility. The format includes a cyclic redudancy check value for detecting data corruption. The format presently uses the DEFLATE method of compression but can be easily extended to use other compression methods. The format can be implemented readily in a manner not covered by patents.\par
+\par
+
+\pard\sl360\slmult1 Table of Contents\par
+
+\pard\li284\sl240\slmult1\ul 1\ulnone . Introduction\par
+
+\pard\li568\sl240\slmult1\ul 1.1\ulnone . Purpose\par
+\ul 1.2\ulnone . Intended audience\par
+\ul 1.3\ulnone . Scope\par
+\ul 1.4\ulnone . Compliance\par
+\ul 1.5\ulnone . Definitions of terms and conventions used\par
+\ul 1.6\ulnone . Changes from previous versions\par
+
+\pard\li284\sl240\slmult1\ul 2\ulnone . Detailed specification\par
+
+\pard\li568\sl240\slmult1\ul 2.1\ulnone . Overall conventions\par
+\ul 2.2\ulnone . File format\par
+\ul 2.3\ulnone . Member format\par
+
+\pard\li852\sl240\slmult1\ul 2.3.1\ulnone . Member header and trailer\par
+
+\pard\li1136\sl240\slmult1\ul 2.3.1.1\ulnone . Extra field\par
+\ul 2.3.1.2\ulnone . Compliance\par
+
+\pard\li284\sl240\slmult1\ul 3\ulnone . References\par
+\ul 4\ulnone . Security Considerations\par
+\ul 5\ulnone . Acknowledgements\par
+\ul 6\ulnone . Author's Address\par
+\ul 7\ulnone . Appendix : Jean-Loup Gailly's gzip utility\par
+\ul 8\ulnone . Appendix : Sample CRC Code\par
+\par
+
+\pard\sl360\slmult1\ul\b 1\ulnone . Introduction\par
+
+\pard\li284\sl360\slmult1\b0 1.1. Purpose\par
+
+\pard\li568\sl240\slmult1 The purpose of this specification is to define a lossless compressed data format that :\par
+
+\pard{\pntext\f2\'B7\tab}{\*\pn\pnlvlblt\pnf2\pnindent0{\pntxtb\'B7}}\fi-142\li994\sl240\slmult1 Is independent of CPU type, operation system, file system, and character set, and hence can be used for interchange;\par
+{\pntext\f2\'B7\tab}Can compress or decompress a data stream (as opposed to a randomly accessible file) to produce another data stream, using only an a priori bounded amount of intermediate storage, and hence can be used in data communications or similar structures such as Unix filters;\par
+{\pntext\f2\'B7\tab}Compresses data with efficiency comparable to the best currently available general-purpose compression methods, and in particular considerably better that the "compress" program;\par
+{\pntext\f2\'B7\tab}Can be implemented readily in a manner not covered by patents, and hence can be practiced freely;\par
+{\pntext\f2\'B7\tab}Is compatible with the file format produced by the current widely used gzip utility, in that conforming decompressors will be able to read data produced by the existing gzip compressor.\par
+
+\pard\li568\sl240\slmult1 The data format defined by this specification does not attempt to :\par
+
+\pard{\pntext\f2\'B7\tab}{\*\pn\pnlvlblt\pnf2\pnindent0{\pntxtb\'B7}}\fi-142\li994\sl240\slmult1 Provide random access to compressed data;\par
+{\pntext\f2\'B7\tab}Compress specialized data (e.g., raster graphics) as well as the best currently available specialized algorithms.\par
+
+\pard\sl240\slmult1\par
+
+\pard\li284\sl360\slmult1 1.2. Intended audience\par
+
+\pard\li568\sl240\slmult1 This specification is intended for use by implementors of software to compress data into gzip gormat and/or decompress datat from gzip format.\par
+The text of the specification assumes a basic background in programming at the level of bits and other primitive data representations.\par
+\par
+
+\pard\li284\sl360\slmult1 1.3. Scope\par
+
+\pard\li568\sl240\slmult1 The specification specifies a compression method and a file format (the latter assuming only that a file can store a sequence of arbitrary bytes). It does not specify any particular interfacr to a file system or anything about character sets or encodings (except for file names and comments, which are optional).\par
+\par
+
+\pard\li284\sl360\slmult1 1.4. Compliance\par
+
+\pard\li568\sl240\slmult1 Unless otherwise indicated below, a compliant decompressor must be able to accept and decompress any file that conforms to all the specifications presented here; a compliant compressor must produce files that conform to all the specifications presented here. The material in the appendices is not part of the specification per se and is not relevant to compliance.\par
+\par
+
+\pard\li284\sl360\slmult1 1.5. Definitions of terms and conventions used\par
+
+\pard\li568\sl240\slmult1 byte : 8 bits stored or transmissed as a unit (same as an octet). (For this specification, a byte is exactly 8 bits, even on machines which store a character on a number of bits different from 8.) See below for the numbering of bits within a byte.\par
+\par
+
+\pard\li284\sl360\slmult1 1.6. Changes from previous versions\par
+
+\pard\li568\sl240\slmult1 There have been to technical changes to the gzip format since version 4.1 of this specification. In version 4.2, some terminology was changed, and the sample CRC code was rewritten for clarity and to eliminate the requirement for the caller to do pre- and post-conditioning. Version 4.3 is a conversion of the specification to RFC style.\par
+
+\pard\sl240\slmult1\lang1041\par
+
+\pard\sl360\slmult1\ul\b\lang1033 2\ulnone . Detailed specification\b0\par
+
+\pard\li284\sl360\slmult1 2.1. Overall conventions\par
+
+\pard\li568\sl240\slmult1 In the diagrams below, a box like this :\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1017 
+\pard\intbl\cell\row 
+\pard\li568\sl240\slmult1\lang1049 represents one byte; a box like this :\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1017\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1182\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1347\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1512\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1842\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2007\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2172 
+\pard\intbl\cell\cell\cell\cell\cell\cell\cell\cell\row 
+\pard\li568\sl240\slmult1 represent a variable number of bytes.\par
+Bytes stored within a computer do not have a "bit order", since they are always treated as a unit. However, a byte considered as an integer between 0 and 255 does have a most- and least-significant bit, and since we write numbers with the most-significant digit on the left, we also write bytes with the most-significant bit on the left. In the diagrams below, we numbr the bits of a byte so that bit 0 is the least-significant bit, i. e., the bits are numbered :\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1857 
+\pard\intbl\f1 76543210\cell\row 
+\pard\li568\sl240\slmult1\f0 This document does not address the issue of the order in which bits of a byte are transmissed on a bit-sequential medium, since the data format described here is byte- rather than bit-oriented.\par
+Within a computer, a number may occupt multiple bytes. All multi-byte numbers in the format described here are stored with the least-significant byte first (at the lower memory address). For example, the decimal number 520 is stored as :\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1902\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2942 
+\pard\intbl\qc\f1 0\cell 1\cell\row\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1902\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2942 
+\pard\intbl\qc\lang1033 00001000\par
+
+\pard\intbl ^\par
+|\par
+|\par
++ less significant byte = 8\cell 
+\pard\intbl\qc 00000010\par
+
+\pard\intbl ^\par
+|\par
++ more significant byte = 2 * 256\cell\row 
+\pard\li568\sl240\slmult1\f0\lang1049\par
+
+\pard\li284\sl360\slmult1 2.2. File format\par
+
+\pard\li568\sl240\slmult1 A gzip consists of a series of  "members" (compressed data sets). The format of each member is specified in the following section. The members simplu appear one after another in the file, with no additional inforamation before, between, or after them.\par
+\par
+
+\pard\li284\sl360\slmult1 2.3. Member format\par
+
+\pard\li568\sl240\slmult1 Each member has the following structure :\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1392\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1847\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2257\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2847\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3632\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4102\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4572 
+\pard\intbl\f1 ID1\cell ID2\cell CM\cell FLG\cell MTIME\cell XFL\cell OS\cell\row 
+\pard\li568\sl240\slmult1\f0 (if FLG.FEXTRA set)\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1452\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137 
+\pard\intbl\f1 XLEN\cell ...XLEN bytes of "extra field"... (more-->)\cell\row 
+\pard\li568\sl240\slmult1\f0 (if FLG.FNAME set)\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6417 
+\pard\intbl\f1 ...original file name, zero-terminated... (more-->)\cell\row 
+\pard\li568\sl240\slmult1\f0 (if FLG.FCOMMENT set)\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5907 
+\pard\intbl\f1 ...file comment, zero-terminated... (more-->)\cell\row 
+\pard\li568\sl240\slmult1\f0 (if FLG.FHCRC set)\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1542 
+\pard\intbl\f1 CRC16\cell\row 
+\pard\li568\sl240\slmult1\f0\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4572 
+\pard\intbl\f1 ...compressed blocks... (more-->)\cell\row 
+\pard\li568\sl240\slmult1\f0\par
+\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1737\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2717 
+\pard\intbl\qc\f1 0 1 2 3\cell 4 5 6 7\cell\row\trowd\trgaph72\trleft852\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1737\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2717 
+\pard\intbl\qc\lang1033 CRC32\cell ISIZE\cell\row 
+\pard\li568\sl240\slmult1\f0\lang1049\par
+
+\pard\li568\sl360\slmult1 2.3.1. Member header and trailer\par
+
+\pard\li852\sl240\slmult1 ID1 (IDentification 1)\par
+ID2 (IDentification 2)\par
+
+\pard\li1136\sl240\slmult1 These have the fixed valies ID1 = 31 (0x1f, \\037), ID2 = 139 (0x8b, \\213), to identify the file as being in gzip format.\par
+
+\pard\li852\sl240\slmult1 CM (Compression Method)\par
+
+\pard\li1136\sl240\slmult1 This identifies the compression method used in the file. CM = 0-7 are reserved. CM = 8 denotes the "deflate" compression method, which is the one customarily used by gzip and which is documented elsewhere.\par
+
+\pard\li852\sl240\slmult1 FLG (FLaGs)\par
+
+\pard\li1136\sl240\slmult1 This flag byte is divided into individual bits as follows :\par
+
+\pard\li1420\sl240\slmult1\tx1136 bit 0 FTEXT\par
+bit 1 FHCRC\par
+bit 2 FEXTRA\par
+bit 3 FNAME\par
+bit 4 FCOMMENT\par
+bit 5 reserved\par
+bit 6 reserved\par
+bit 7 reserved\par
+
+\pard\li1136\sl240\slmult1\tx1136 If FTEXT is set, the file is probably ASCII text. This is an optional indication, which the compressor may set by checking a small amount of the input data to see whether any non-ASCII characters are present. In case of doubt, FTEXT is cleared, indicating binary data. For systems which have different file formats for ascii text and binary data, the decompressor can use FTEXT to choose the appropriate format. We deliberately do not specify the algorithm used to set this bit, since a compressot always has the option os leaving it cleared and a decompressor always has the option of ignoring it and letting some other program handle issues of data conversion.\par
+If FHCRC is set, a CRC16 for the gzip header is present immediately before the compressed data. The CRC16 consists of the two least significant bytes of the CRC32 for all bytes of the gzip header up to and not including the CRC16. [The FHCRC bit was never set by versions of gzip up to 1.2.4, even though it was documented with a different meaning in gzip 1.2.4.]\par
+If FEXTRA is set, optional extra fields are present, as described in a following section.\par
+If FNAME is set, an original name is present, terminated by a zero byte. The name must consist of ISO 8859-1 (LATIN-1) characters; on operating system using EBCDIC or any other character set for file names, the namr, must be translated to the ISO LATIN-1 character set. This is the original name of the file being compressed with any directory components removed, and, if the file being compressed is on a file system with case insensitive names, forced to lower case. There is no original file name if the data was compressed from a source other than a named file; for example, if the source was stdin on a Unix system, there is no file name.\par
+If FCOMMENT is set, a zero-terminated file comment is present. This comment is not interpreted;; it is only intended for human consumption. The comment must consist of ISO 8859-1 (LATIN-1) characters. Line breaks should be denoted by a single line feed character (10 decimal).\par
+Reserved FLG bits must be zero.\par
+
+\pard\li852\sl240\slmult1\tx1136 MTIME (Modification TIME)\par
+
+\pard\li1136\sl240\slmult1\tx1136 This gives the most recent modification time of the original gile being compressed. The time is in Unix format, i.e., seconds since 00:00:00 GMT, Jan. 1, 1970. (Note that this may cause problems for MS-DOS and other systems that use local rather than Universal time.) If the compressed data did not come a file, MTIME is set to the time at which compression started. MTIME  = 0 means no time stamp is available.\par
+
+\pard\li852\sl240\slmult1\tx1136 XFL (eXtra FLags)\par
+
+\pard\li1136\sl240\slmult1\tx1136 These flags are available for use by specific compression methods. The "deflate" method (CM = 8) sets these flags as follows :\par
+
+\pard\li1420\sl240\slmult1\tx1136 XFL = 2 - compressor used maximum compression, slowest algorithm\par
+XFL = 4 - compressor used fastest algorithm\par
+
+\pard\li852\sl240\slmult1\tx1136 OS (Operating System)\par
+
+\pard\li1136\sl240\slmult1\tx1136 This identifies the type of file system on which compression took place. This may useful in determining end-of-line convention for text files. The currently defined values are as follows :\par
+
+\pard\li1420\sl240\slmult1\tx1136 0 - FAT filesystem (MS-DOS, OS/2, NT/Win32)\par
+1 - Amiga\par
+2 - VMS (or OpenVMS)\par
+3 - Unix\par
+4 - VM/CMS\par
+5 - Atari TOS\par
+6 - HPFS filesystem (OS/2, NT)\par
+7 - Macintosh\par
+8 - Z-System\par
+9 - CP/M\par
+10 - TOPS-20\par
+11 - NTFS filesystem (NT)\par
+12 - QDOS\par
+13 - Acorn RISCOS\par
+255 - unknown\par
+
+\pard\li852\sl240\slmult1\tx1136 XLEN (eXtra LENgth)\par
+
+\pard\li1136\sl240\slmult1\tx1136 If FLG.FEXTRA is set, this gives the length of the optional extra field. See below for details.\par
+
+\pard\li852\sl240\slmult1\tx1136 CRC32\lang1033  (CRC-32)\par
+
+\pard\li1136\sl240\slmult1\tx1136 This contains a Cyclic Redudancy Check value of the uncompressed data conputed according to CRC-32 algorithm used in the ISO 3309 standard and in \ul section 8.1.1.6.2\ulnone  of ITU-T recommendation V.42. (See \ul http://www.iso.ch\ulnone  for otdering ISO documents. See gopher://info.itu.ch for an online version of ITU-T V.42.)\par
+
+\pard\li852\sl240\slmult1\tx1136 ISIZE (Input SIZE)\par
+
+\pard\li1136\sl240\slmult1\tx1136 This contains the size of the original (uncompressed) input data modulo 2\super 32\nosupersub .\par
+\par
+
+\pard\li852\sl360\slmult1\tx1136 2.3.1.1. Extra field\par
+
+\pard\li1136\sl240\slmult1\tx1136 If the FLG.FEXTRA bit is set, an "extra field" is present in the header, with total length XLEN. It consists of a series of subfields, each of the form :\par
+\trowd\trgaph72\trleft1420\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1915\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2370\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2850\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6560 
+\pard\intbl\f1 SI1\cell SI2\cell LEN\cell ... LEN bytes of subfield data...\cell\row 
+\pard\li1136\sl240\slmult1\tx1136\f0\lang1049 SI1 and SI2 provide a subfield ID, typically two ASCII letters with some mnemonic value. Jean-Loup Gailly <gzip@prep.ai.mit.edu> is maintaining a registry of subfield IDs; please send him any subfield UD you wish to use. Subfield IDs with SI2 = 0 are reserved for future use. The following IDs are currently defined :\par
+\trowd\trgaph72\trleft1420\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2650\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3885\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7020 
+\pard\intbl\f1 SI1\cell SI2\cell Data\cell\row\trowd\trgaph72\trleft1420\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2650\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3885\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7020 
+\pard\intbl\lang1033 0x41 ('A')\cell 0x70 ('P')\cell Apollo file type information\cell\row 
+\pard\li1136\sl240\slmult1\tx1136\f0\lang1049 LEN gives the length of the subfield data, excluding the 4 initial bytes.\par
+\par
+
+\pard\li852\sl360\slmult1\tx1136 2.3.1.2. Compliance\par
+
+\pard\li1136\sl240\slmult1\tx1136 A compliant compressor must produce files with correct ID1, ID2, CM, CRC32, and ISIZE, but may set all the other fields in the fixed-length part of the header to default values (255 for OS, 0 for all others). The compressor must set all reserved bits to zero.\par
+A compliant decompressor must check ID1, ID2, and CM, and provide an error indication if any of these have incorrect values. It must examine FEXTRA/XLEN, FNAME, FCOMMENT and FHCRC at least so it can skip over the optional fields if they are present. It need not examine any other part of the header or trailer; in particular; a decompressor may ignore FTEXT and OS and always produce binary output, and still be compliant. A compliant decompressor must give an error indication if any reserved bit is non-zero, since such a bit could indicate the presence of a new field that would cause subsequent data to be interpreted incorrectly.\par
+\par
+
+\pard\sl360\slmult1\tx1136\ul\b 3\ulnone . References\par
+
+\pard\fi-284\li568\sl240\slmult1\tx1136\b0 [1] "Information Processing - 8-bit single-byte coded graphic character sets - Part 1: Latin alphaber No. 1" (ISO 8859-1:1987). The ISO 8859-1 (Latin-1) character set is a superset of 7-bit ASCII. Files defining this character set are available as iso_8859-1.* in \ul ftp://ftp.uu.net/graphics/png/documents/\ulnone\par
+[2] ISO 3309\par
+[3] ITU-T recommendation V.42\par
+[4] Deutsch, L. P., "DEFLATE Compressed Data Format Specification", available in \ul ftp://ftp.uu.net/pub/archiving/zip/doc/\ulnone\par
+[5] Gailly, J.-L., GZIP documentation, available as gzipp-*.tar in \ul ftp://prep.ai.mit.edu/pub/gnu/\ulnone\par
+[6] Sarwate, D. V., "Computation of Cyclic Redudancy Checks via Table Look-Up", Communications of the ACM, 31(8), pp. 1008 - 1013.\par
+[7] Schwaderer, W. D., "CRC Calculation", April 85 PC Tech Journal, pp. 118 - 133\par
+[8] \ul ftp://ftp.adelaide.edu.au/pub/rocksoft/papers/crc_v3.txt\ulnone , describing the CRC concept.\par
+\par
+
+\pard\sl360\slmult1\tx1136\ul\b 4\ulnone . Security Considerations\b0\par
+
+\pard\li284\sl240\slmult1\tx1136 Any data compression method involves the reduction of redudancy in the data. Consequently, any corruption of the data is likely to have severe effects and be difficult to correct. Uncompressed text, on the other hand, will probably still be readable despite the presence of some corrupted bytes.\par
+It is recommneded that systems using this data format provide some means of validating the integrity of the compressed data, such as by setting and checking CRC-32 check value.\par
+\par
+
+\pard\sl360\slmult1\tx1136\ul\b 5\ulnone . Acknowledgements\par
+
+\pard\li284\sl240\slmult1\tx1136\b0 Trademarks cited in this document are the property of their respective owners.\par
+Jean-Loup Gailly designed the gzip format and wrote, with Mark Adler, the related software described in this specification. Glenn Randers-Perhson converted this document to RFC and HTML format. Adel'gid Aragami, the author of MASTER library, is rewrote this document from scratch using touch typing in RTF format.\par
+\par
+
+\pard\sl360\slmult1\tx1136\ul\b 6\ulnone . Author's Address\par
+
+\pard\li284\sl240\slmult1\tx1136\b0 L. Peter Deutsch\par
+Aladdin Enterprises\par
+203 Santa Margarita Ave.\par
+Menlo Park, CA 94025\par
+Phone : (415) 322-0103 (AM only)\par
+FAX : (415) 322-1734\par
+EMail : <ghost@aladdin.com>\par
+Questions about the technical content of this specification can be sent by email to :\par
+Jean-Loup Gailly <gzip@prep.ai.mit.edu> and\par
+Mark Adler <madler@alumni.caltech.edu>\par
+Editorial comments on this specification can be sent by email to :\par
+L. Peter Deutsch <ghost@aladdin.com> and\par
+Glenn Randres-Perhson <randeg@alumni.rpi.edu>\par
+\par
+
+\pard\sl360\slmult1\tx1136\ul\b 7\ulnone . Appendix : Jean-Loup Gailly's gzip utility\b0\par
+
+\pard\li284\sl240\slmult1\tx1136 The most widely used implementation of gzip compression, and the original documentation on which this specification is based, were created by Jean-Loup Gailly <gzip@prep.ai.mit.edu>. Since this implementation is a de facro standard, we mention some more of its features here. Again, the material in this section is not part of the specification per se, and implementation need not follow it to be compliant.\par
+When compressing or decompressing a file, gzip preserves the protection, ownership, and modification time attributes on the local file system, since there is no provision for representing protection attributes in the gzip file format itself. Since the file format includes a modification time, the gzip decompressor provides a command line switch that assigns the modification time from the file, rather thatn the local modification time of the compressed input, to the decompressed output.\par
+\par
+
+\pard\sl360\slmult1\tx1136\ul\b 8\ulnone . Appendix : Sample CRC Code\par
+
+\pard\li284\sl240\slmult1\tx1136\b0 The following sample code represents a practical implementation of the CRC (Cycllic Redudancy Check). (See aldo ISO 3309 and ITU-T V.42 for a format specification.)\par
+The sample code is in the ANSI C programming language. Non C users may find it easier to read with these hints :\par
+\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1393\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx10783 
+\pard\intbl &\cell Bitwise AND operator.\cell\row\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1393\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx10783 
+\pard\intbl\lang1033 ^\cell Bitwise exclusive-OR operator.\cell\row\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1393\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx10783 
+\pard\intbl >>\cell Bitwise right shift operator. When applied to an unsigned quantity, as here, right shift inserts zero bit(s) at the left.\cell\row\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1393\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx10783 
+\pard\intbl !\cell Logical NOT operator.\cell\row\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1393\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx10783 
+\pard\intbl ++\cell "n++" increments the variable n.\cell\row\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1393\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx10783 
+\pard\intbl 0xNNN\cell 0x introduces a hexadecimal (base 16) constant. Suffix L indicates a long value (at least 32 bits)\cell\row 
+\pard\li284\sl240\slmult1\tx1136\lang1049\par
+\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx9703 
+\pard\intbl\f1 /* Table of CRCs of all 8-bit messages. */\par
+unsigned long crc_table[256];\par
+\par
+/* Flag: has the table been computed? Initially false. */\par
+int crc_table_computed = 0;\par
+\par
+/* Make the table for a fast CRC. */\par
+void make_crc_table(void) \{\par
+  unsigned long c;\par
+  int n, k;\par
+  for (n = 0; n < 256; n++) \{\par
+    c = (unsigned long)n;\par
+    for (k = 0; k < 8; k++) \{\par
+      if (c & 1) \{\par
+        c = 0xedb88320L ^ (c >> 1);\par
+      \} else \{\par
+        c = c >> 1;\par
+      \}\par
+    \}\par
+    crc_table[n] = c;\par
+  \}\par
+  crc_table_computed = 1;\par
+\}\par
+\par
+/*\par
+  Update a running crc with the bytes buf[0..len-1] and return the updated crc. The crc should be initialized to zero. Pre- and post-conditioning (one's complement) is performed within this function so it shouldn't be done by the caller. Usage example :\par
+  unsigned long crc = 0L;\par
+  while (read_buffer(buffer, length) != EOF) \{\par
+    crc = update_crc(crc, buffer, length);\par
+  \}\par
+  if (crc != original_crc) error();\par
+*/\par
+unsigned long update_crc(unsigned long crc, unsigned char *buf, int len) \{\par
+  unsigned long c = crc ^ 0xffffffffL;\par
+  int n;\par
+  if (!crc_table_computed)\par
+    make_crc_table();\par
+  for (n = 0; n < len; n++) \{\par
+    c = crc_table[(c ^ buf[n]) & 0xff] ^ (c >> 8);\par
+  \}\par
+  return c ^ 0xffffffffL;\par
+\}\par
+\par
+/* Return the CRC of the bytes buf[0..len-1]. */\par
+unsigned long crc(unsigned char *buf, int len) \{\par
+  return update_crc(0L, buf, len);\par
+\}\f0\cell\row 
+\pard\li284\sl240\slmult1\tx1136\par
+}
+ 
