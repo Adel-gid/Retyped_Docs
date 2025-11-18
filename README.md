@@ -13,7 +13,7 @@ retyping. For authoritative versions, refer to the official sources.
 
 ## Document Matrix (4×4)
 
-|[RFC1950](./rfc1950.rtf)|[RFC1951](./rfc1951.rtf)|-|-|
+|[RFC1950](./rfc1950.rtf)|[RFC1951](./rfc1951.rtf)|[RFC1952](./rfc1952.rtf)|-|
 |-|-|-|-|
 |-|-|-|-|
 |-|-|-|-|
