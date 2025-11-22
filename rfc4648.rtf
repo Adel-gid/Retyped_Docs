@@ -1,0 +1,908 @@
+{\rtf1\ansi\ansicpg1251\deff0\nouicompat\deflang1049{\fonttbl{\f0\fnil\fcharset0 Arial;}{\f1\fmodern\fprq1\fcharset0 Consolas;}{\f2\fnil\fcharset1 Segoe UI Symbol;}{\f3\fmodern\fprq1\fcharset204 Consolas;}{\f4\fnil\fcharset2 Symbol;}}
+{\*\generator Riched20 10.0.26100}\viewkind4\uc1 
+\pard\fs18\lang1033 Network Working Group\par
+Request for Comments : 4648\par
+Obsoletes : 3548\par
+Category : Standard Track\par
+
+\pard\qr S. Josefsson\par
+SJD\par
+October 2006\par
+\par
+
+\pard\qc\b The Base16, Base32, and Base64 Data Encodings\par
+\par
+
+\pard\sl360\slmult1\b0 Status of This Memo\par
+
+\pard\li284\sl240\slmult1 This document specifies an Internaet standards track protocol for the Internet community, and requests discussion and suggestions for improvements. Please refer to the current edition of the "Internet Official Protocol Standards" (STD 1) for the standartization state and status of this protocol. Distribution of this memo is unlimited.\par
+\par
+
+\pard\sl360\slmult1\lang1049 Copyright Notice\par
+
+\pard\li284\sl240\slmult1 Copyright (C) The Internet Society (2006)\par
+\par
+
+\pard\sl360\slmult1\ul\b Disclaimer\par
+
+\pard\li284\sl240\slmult1\ulnone This document is a retyped version of RFC 4648 created by the author of the MASTER library, Adel'gid Aragami. It was reproduced using touch typing and may therefore contain typographical errors or inaccuracies when compared to the official text. For the authoritative version, refer to the original RFC available at \ul https://datatracker.ietf.org/doc/html/rfc4648\ulnone .\b0\par
+\par
+
+\pard\sl360\slmult1 Abstract\par
+
+\pard\li284\sl240\slmult1 This document describes the commonly used base 64, base 32, and base 16 encoding schemes. It also discusses the use of line-feeds in encoded data, use of padding in encoded data, use of non-alphaber characters in encoded data, use of different encoding alphabets, and canonical encodings.\par
+\par
+
+\pard\sl360\slmult1 Table of Contents\par
+
+\pard\li284\sl240\slmult1\ul 1\ulnone . Introduction\par
+\ul 2\ulnone . Conventions Used in This Document\par
+\ul 3\ulnone . Implementation Discrepancies\par
+
+\pard\li568\sl240\slmult1\ul 3.1\ulnone . Line Feeds in Encoded Data\par
+\ul 3.2\ulnone . Padding of Encoded Data\par
+\ul 3.3\ulnone . Interpretation of Non-Alphabet Characters in Encoded Data\par
+\ul 3.4\ulnone . Choosing the Alphaber\par
+\ul 3.5\ulnone . Canonical Encoding\par
+
+\pard\li284\sl240\slmult1\ul 4\ulnone . Base 64 Encoding\par
+\ul 5\ulnone . Base 64 Encoding with URL and Filename Safe Alphaber\par
+\ul 6\ulnone . Base 32 Encoding\par
+\ul 7\ulnone . Base 32 Encoding with Extended Hex Alphabet\par
+\ul 8\ulnone . Base 16 Encoding\par
+\ul 9\ulnone . Illustrations and Examples\par
+\ul 10\ulnone . Test Vectors\par
+\ul 11\ulnone . ISO C99 Implementation of Base64\par
+\ul 12\ulnone . Security Considerations\par
+\ul 13\ulnone . Changes Since RFC 3548\par
+\ul 14\ulnone . Acknowledgements\par
+\ul 15\ulnone . Copying Conditions\par
+\ul 16\ulnone . References\par
+
+\pard\li568\sl240\slmult1\ul 16.1\ulnone . Normative References\par
+\ul 16.2\ulnone . Informative References\par
+\par
+
+\pard\sl360\slmult1\ul\b 1\ulnone . Introduction\b0\par
+
+\pard\li284\sl240\slmult1 Base encoding of data is used in many situations to store or transfer data in environments that, perhaps for legacy reasons, are restricted to US-ASCII [\ul 1\ulnone ] data. Base encoding can also be used in new applications that do not have legacy restrictions, simply because it makes it possible to manipulate objects with text editors.\par
+In the past, different applications have has different requirements and thus sometimes implemented base encodings is slightly different ways. Today, protocol specifications sometimes use base encodings in general, and "base64" in particular, without a precise description or reference. Multipurpose Internet Mail Extensions (MIME) [\ul 4\ulnone ] is often used a reference for base64 without considering the consequences for line-wrapping or non-alphaber characters. The purpose of this specification is to establish common alphabet and encoding considerations. This will hopefully reduce ambiguity in other documents, leading to better interoperability.\par
+\par
+
+\pard\sl360\slmult1\ul\b 2\ulnone . Conventions Used in This Documents\b0\par
+
+\pard\li284\sl240\slmult1 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [\ul 2\ulnone ].\par
+\par
+
+\pard\sl360\slmult1\ul\b 3\ulnone . Implementation Discrepancies\b0\par
+
+\pard\li284\sl240\slmult1 Here we discuss the discrepancies between base encoding implementations in the past and, where appropriate, madate a specific recommended behavior for the future.\par
+\par
+
+\pard\li284\sl360\slmult1\ul 3.1\ulnone . Line Feeds in Encoded Data\par
+
+\pard\li568\sl240\slmult1 MIME [\ul 4\ulnone ] is often used as a reference for base 64 encoding. However, MIME does not define "base 64" per se, but rather a "base 64 Content-Transfer-Encoding" for use within MIME. As such, MIME enforces a limit on line length of base 64-encoded data to 76 characters. MIME inherits the encoding from Privacy Enhanced Mail (PEM) [\ul 3\ulnone ], starting that it is "virtually identical"; however, PEM uses a line length of 64 characters. The MIME and PEM limits are both due to limits within SMTP.\par
+Implementations MUST NOT add line feeds to base-encoded data unless the specification referring to this document explicitly directs base encoders to add like feeds after a specific number of characters.\par
+\par
+
+\pard\li284\sl360\slmult1\ul 3.2\ulnone . Padding of Encoded Data\par
+
+\pard\li568\sl240\slmult1 In some circumstances, the use of padding ("=") in a base-encoded data is not required or used. In the general case, when assumptions about the size of transported data cannot be made, padding is required to yield correct decoded data.\par
+Implementations MUST include appropriate pad characters at the end of encoded data unless the specification referring to this document explicitly states otherwise.\par
+The base64 and base32 alphabets use padding, as described below in sections \ul 4\ulnone  and \ul 6\ulnone , but the base16 alphabet does not need it; see \ul section 8\ulnone .\par
+\par
+
+\pard\li284\sl360\slmult1\ul 3.3\ulnone . Interpretation of Non-Alphabet Characters in Encoded Data\par
+
+\pard\li568\sl240\slmult1 Base encodings use a specific, reduces alphabet to encode binary data. Non-alphabet characters could exist within base-encoded data, caused by data corruption or by design. Non-alphabet characters may be exploited as a "covert channel", where non-protocol data can be sent for nefatious purposes. Non-alphabet characters might also be sent in order to exploint implementation errors leading to, e.g., buffer overflow attacks.\par
+Implementations MUST reject the encoded data if it contains characters outside the base alphabet when interpreting base-encoded data, unless the specification referring to this document explicitly states otherwise. Such specification may instead state, as MIME does, that characters outside the base encoding alphabet should simply be ignored when interpreting data ("be liberal in what you accept"). Note that this means that any adjacent carriage return/line feed (CRLF) characters constitute "non-alphabet characters" and are ignored. Furthermore, such specifications MAY ignore the pad characters, "=", treating it as non-alphabet data, if it is present before the end of the encoded data. If more than the allowed number of pad characters is found at the end of the string (e.g., a base 64 string terminated with "==="), the excess pad characters MAY also be ignored.\par
+\par
+
+\pard\li284\sl360\slmult1\ul 3.4\ulnone . Choosing the Alphabet\par
+
+\pard\li568\sl240\slmult1 Different applications have different requirements on the characters in the alphaber. Here are a few requirements that determine which alphabet should be used :\par
+
+\pard{\pntext\f4\'B7\tab}{\*\pn\pnlvlblt\pnf4\pnindent0{\pntxtb\'B7}}\fi-142\li994\sl240\slmult1 Handled by humans. The characters "0" and "O" are easily confused, as are "1", "l" and "I". In the base32 alphabet below, where 0 (zero) and 1 (one) are not present, a decoder may interpret 0 as O, and 1 as I or L depending on case. (However, by default it should not; see previous section.)\par
+{\pntext\f4\'B7\tab}Encoded into structures that madate other requirements. For base 16 and base 32, this determines the use of upper- or lowercase alphabets. For base 64, the non-alphanumeric characters (in particular, "/") may be problematic in file names and URLs.\par
+{\pntext\f4\'B7\tab}Used as identifiers. Certain characters, notably "+" and "/" in the base 64 alphabet, are treated as word-breaks by legacy text search/index tools.\par
+
+\pard\li568\sl240\slmult1 There is no universally accepted alphabet that fulfills all the requirements. For an example of a highly specialized variant, see IMAP [\ul 8\ulnone ]. In this document, we document and name some currently used alphabets.\par
+\par
+
+\pard\li284\sl360\slmult1\ul 3.5\ulnone . Canonical Encoding\par
+
+\pard\li568\sl240\slmult1 The padding in base 64 and base 32 encoding can, if improperly implemented, lead to non-significant alterations of the encoded data. For example, if the input is only one octet for a base 64 encodings, then all six bits of the first symbol are used, but only the first two bits of the next symbol are used. These pad bits MUST be set to zero by conforming encoders, which is described in the descriptions on padding below. If this property do not hold, there is not canonical representation of base-encoded data, and multiple base-encoded string can be decoded to the same binary data. If this property (and other discussed in this document) holds, a canonical encoding is guaranteed.\par
+In some environments, the alteration is critical and therefore decoders MAY chose to reject an encoding if the pad bits habe not been set to zero. The specification referring to this may mandate a specific behaviour.\par
+\par
+
+\pard\sl360\slmult1\ul\b 4\ulnone . Base 64 Encoding\par
+
+\pard\li284\sl240\slmult1\b0 The following description of bae 64 is derived from [\ul 3\ulnone ], [\ul 4\ulnone ], [\ul 5\ulnone ], and [\ul 6\ulnone ]. This encoding may be referred to as "base64".\par
+The Base 64 encoding is designed to represent arbitrary sequences of octers in a form that allows the use of both upper- and lowercase letters but that need not be human readalble.\par
+A 65-character subset of US-ASCII is used, enabling 6 bits to be represented per printable character. (The extra 65th character, "=", is used to signify a special processing function.)\par
+The encoding process represents 24-bit grou[s of input bits as output strings of 4 encoded characters. Proceeding from left to right, a 24-input group is formed by concatenating 3 8-bit input groups. These 24 bits are then treated as 4 concatenated 6-bit groups, each of which is translated into a single character in the base 64 alphabet.\par
+Each 6-bit group is used as an index into an array of 64 printable characters. The character referenced by the index is placed in the output string.\par
+
+\pard\li284\sl240\slmult1\qc Table 1 : The Base 64 Alphabet\par
+\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr\lang1033 0\cell 
+\pard\intbl A\cell 
+\pard\intbl\qr 17\cell 
+\pard\intbl R\cell 
+\pard\intbl\qr 34\cell 
+\pard\intbl i\cell 
+\pard\intbl\qr 51\cell 
+\pard\intbl z\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 1\cell 
+\pard\intbl B\cell 
+\pard\intbl\qr 18\cell 
+\pard\intbl S\cell 
+\pard\intbl\qr 35\cell 
+\pard\intbl j\cell 
+\pard\intbl\qr 52\cell 
+\pard\intbl 0\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 2\cell 
+\pard\intbl C\cell 
+\pard\intbl\qr 19\cell 
+\pard\intbl T\cell 
+\pard\intbl\qr 36\cell 
+\pard\intbl k\cell 
+\pard\intbl\qr 53\cell 
+\pard\intbl 1\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 3\cell 
+\pard\intbl D\cell 
+\pard\intbl\qr 20\cell 
+\pard\intbl U\cell 
+\pard\intbl\qr 37\cell 
+\pard\intbl l\cell 
+\pard\intbl\qr 54\cell 
+\pard\intbl 2\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 4\cell 
+\pard\intbl E\cell 
+\pard\intbl\qr 21\cell 
+\pard\intbl V\cell 
+\pard\intbl\qr 38\cell 
+\pard\intbl m\cell 
+\pard\intbl\qr 55\cell 
+\pard\intbl 3\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 5\cell 
+\pard\intbl F\cell 
+\pard\intbl\qr 22\cell 
+\pard\intbl W\cell 
+\pard\intbl\qr 39\cell 
+\pard\intbl n\cell 
+\pard\intbl\qr 56\cell 
+\pard\intbl 4\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 6\cell 
+\pard\intbl G\cell 
+\pard\intbl\qr 23\cell 
+\pard\intbl X\cell 
+\pard\intbl\qr 40\cell 
+\pard\intbl o\cell 
+\pard\intbl\qr 57\cell 
+\pard\intbl 5\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 7\cell 
+\pard\intbl H\cell 
+\pard\intbl\qr 24\cell 
+\pard\intbl Y\cell 
+\pard\intbl\qr 41\cell 
+\pard\intbl p\cell 
+\pard\intbl\qr 58\cell 
+\pard\intbl 6\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 8\cell 
+\pard\intbl I\cell 
+\pard\intbl\qr 25\cell 
+\pard\intbl Z\cell 
+\pard\intbl\qr 42\cell 
+\pard\intbl q\cell 
+\pard\intbl\qr 59\cell 
+\pard\intbl 7\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 9\cell 
+\pard\intbl J\cell 
+\pard\intbl\qr 26\cell 
+\pard\intbl a\cell 
+\pard\intbl\qr 43\cell 
+\pard\intbl r\cell 
+\pard\intbl\qr 60\cell 
+\pard\intbl 8\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 10\cell 
+\pard\intbl K\cell 
+\pard\intbl\qr 27\cell 
+\pard\intbl b\cell 
+\pard\intbl\qr 44\cell 
+\pard\intbl s\cell 
+\pard\intbl\qr 61\cell 
+\pard\intbl 9\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 11\cell 
+\pard\intbl L\cell 
+\pard\intbl\qr 28\cell 
+\pard\intbl c\cell 
+\pard\intbl\qr 45\cell 
+\pard\intbl t\cell 
+\pard\intbl\qr 62\cell 
+\pard\intbl +\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 12\cell 
+\pard\intbl M\cell 
+\pard\intbl\qr 29\cell 
+\pard\intbl d\cell 
+\pard\intbl\qr 46\cell 
+\pard\intbl u\cell 
+\pard\intbl\qr 63\cell 
+\pard\intbl /\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 13\cell 
+\pard\intbl N\cell 
+\pard\intbl\qr 30\cell 
+\pard\intbl e\cell 
+\pard\intbl\qr 47\cell 
+\pard\intbl v\cell 
+\pard\intbl\qr\cell 
+\pard\intbl\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 14\cell 
+\pard\intbl O\cell 
+\pard\intbl\qr 31\cell 
+\pard\intbl f\cell 
+\pard\intbl\qr 48\cell 
+\pard\intbl w\cell 
+\pard\intbl\qr (pad)\cell 
+\pard\intbl =\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 15\cell 
+\pard\intbl P\cell 
+\pard\intbl\qr 32\cell 
+\pard\intbl g\cell 
+\pard\intbl\qr 49\cell 
+\pard\intbl x\cell 
+\pard\intbl\qr\cell 
+\pard\intbl\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7147 
+\pard\intbl\qr 16\cell 
+\pard\intbl Q\cell 
+\pard\intbl\qr 33\cell 
+\pard\intbl h\cell 
+\pard\intbl\qr 50\cell 
+\pard\intbl y\cell 
+\pard\intbl\qr\cell 
+\pard\intbl\cell\row 
+\pard\li284\sl240\slmult1\lang1049 Special processing is performed if fewer than 24 bits are available at the end of the data being encoded. A full encoding quantum is always completed at the end of a quantity. When fewer than 24 input bits are available in at input group, bits with value zero are added (on the right) to form an intergral number of 6-bit groups. Padding at the end of the data is performed using the '=' character. Since all base 64 input is an integral number of octets, only the following cases can arise :\par
+
+\pard\fi-284\li568\sl240\slmult1 (1) The final quantum of encoding input is an integral multiple of 24 bits; here, the final unit of encoded output will be an integral multiple of 4 characters with no "=" padding.\par
+(2) The final quantum of encoding input is exactly 8 bits; here, the final unit of encoded output will be two characters followed by two "=" padding characters.\par
+(3) The final quantum of encoding input is exactly 16 bits; here, the final unit of encoded output will be three characters followerd by one "=" padding character.\par
+\par
+
+\pard\sl360\slmult1\ul\b 5\ulnone . Base 64 Encoding with URL and Filename Safe Alphabet\par
+
+\pard\li284\sl240\slmult1\b0 The Base 64 encoding with an URL and filename safe alphabet has been used in [\ul 12\ulnone ].\par
+An alternative alphaben has been suggested that would use "~" as the 63rd character. Since the "~" character has special meaning in some file system environments, the encoding described in this section is recommended instead. The remaining unreserved URI character is ".", but some fule system environments fo not permit multiple "." in a filename, thus making the "." character unattractive as well.\par
+The pad character "=" is typically percent-encoded when used in an URI [\ul 9\ulnone ], but if the data length is known implicitly, this can be avoided by skipping the padding; see \ul section 3.2\ulnone .\par
+This encoding may be referred to as "base64url". This encoding should not be regarded as the same as the "base64" encoding and should not be referred to as only "base64". Unless clarified otherwise, "base64" refers to the base 64 in the previous section.\par
+
+\pard\li284\sl240\slmult1 This encoding is technically identical to the previous one, except for the 62:nd and 63:rd alphabet character, as indicated in Table 2.\lang1033\par
+
+\pard\li284\sl240\slmult1\qc Table 2 : The "URL and Filename safe" Base 64 Alphabet\par
+\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 0\cell 
+\pard\intbl A\cell 
+\pard\intbl\qr 17\cell 
+\pard\intbl R\cell 
+\pard\intbl\qr 34\cell 
+\pard\intbl i\cell 
+\pard\intbl\qr 51\cell 
+\pard\intbl z\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 1\cell 
+\pard\intbl B\cell 
+\pard\intbl\qr 18\cell 
+\pard\intbl S\cell 
+\pard\intbl\qr 35\cell 
+\pard\intbl j\cell 
+\pard\intbl\qr 52\cell 
+\pard\intbl 0\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 2\cell 
+\pard\intbl C\cell 
+\pard\intbl\qr 19\cell 
+\pard\intbl T\cell 
+\pard\intbl\qr 36\cell 
+\pard\intbl k\cell 
+\pard\intbl\qr 53\cell 
+\pard\intbl 1\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 3\cell 
+\pard\intbl D\cell 
+\pard\intbl\qr 20\cell 
+\pard\intbl U\cell 
+\pard\intbl\qr 37\cell 
+\pard\intbl l\cell 
+\pard\intbl\qr 54\cell 
+\pard\intbl 2\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 4\cell 
+\pard\intbl E\cell 
+\pard\intbl\qr 21\cell 
+\pard\intbl V\cell 
+\pard\intbl\qr 38\cell 
+\pard\intbl m\cell 
+\pard\intbl\qr 55\cell 
+\pard\intbl 3\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 5\cell 
+\pard\intbl F\cell 
+\pard\intbl\qr 22\cell 
+\pard\intbl W\cell 
+\pard\intbl\qr 39\cell 
+\pard\intbl n\cell 
+\pard\intbl\qr 56\cell 
+\pard\intbl 4\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 6\cell 
+\pard\intbl G\cell 
+\pard\intbl\qr 23\cell 
+\pard\intbl X\cell 
+\pard\intbl\qr 40\cell 
+\pard\intbl o\cell 
+\pard\intbl\qr 57\cell 
+\pard\intbl 5\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 7\cell 
+\pard\intbl H\cell 
+\pard\intbl\qr 24\cell 
+\pard\intbl Y\cell 
+\pard\intbl\qr 41\cell 
+\pard\intbl p\cell 
+\pard\intbl\qr 58\cell 
+\pard\intbl 6\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 8\cell 
+\pard\intbl I\cell 
+\pard\intbl\qr 25\cell 
+\pard\intbl Z\cell 
+\pard\intbl\qr 42\cell 
+\pard\intbl q\cell 
+\pard\intbl\qr 59\cell 
+\pard\intbl 7\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 9\cell 
+\pard\intbl J\cell 
+\pard\intbl\qr 26\cell 
+\pard\intbl a\cell 
+\pard\intbl\qr 43\cell 
+\pard\intbl r\cell 
+\pard\intbl\qr 60\cell 
+\pard\intbl 8\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 10\cell 
+\pard\intbl K\cell 
+\pard\intbl\qr 27\cell 
+\pard\intbl b\cell 
+\pard\intbl\qr 44\cell 
+\pard\intbl s\cell 
+\pard\intbl\qr 61\cell 
+\pard\intbl 9\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 11\cell 
+\pard\intbl L\cell 
+\pard\intbl\qr 28\cell 
+\pard\intbl c\cell 
+\pard\intbl\qr 45\cell 
+\pard\intbl t\cell 
+\pard\intbl\qr 62\cell 
+\pard\intbl - (minus)\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 12\cell 
+\pard\intbl M\cell 
+\pard\intbl\qr 29\cell 
+\pard\intbl d\cell 
+\pard\intbl\qr 46\cell 
+\pard\intbl u\cell 
+\pard\intbl\qr 63\cell 
+\pard\intbl _\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 13\cell 
+\pard\intbl N\cell 
+\pard\intbl\qr 30\cell 
+\pard\intbl e\cell 
+\pard\intbl\qr 47\cell 
+\pard\intbl v\cell 
+\pard\intbl\qr\cell 
+\pard\intbl (underline)\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 14\cell 
+\pard\intbl O\cell 
+\pard\intbl\qr 31\cell 
+\pard\intbl f\cell 
+\pard\intbl\qr 48\cell 
+\pard\intbl w\cell 
+\pard\intbl\qr\cell 
+\pard\intbl\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 15\cell 
+\pard\intbl P\cell 
+\pard\intbl\qr 32\cell 
+\pard\intbl g\cell 
+\pard\intbl\qr 49\cell 
+\pard\intbl x\cell 
+\pard\intbl\qr\cell 
+\pard\intbl\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 16\cell 
+\pard\intbl Q\cell 
+\pard\intbl\qr 33\cell 
+\pard\intbl h\cell 
+\pard\intbl\qr 50\cell 
+\pard\intbl y\cell 
+\pard\intbl\qr (pad)\cell 
+\pard\intbl =\cell\row 
+\pard\li284\sl240\slmult1\lang1049\par
+
+\pard\sl360\slmult1\ul\b 6\ulnone . Base 32 Encoding\par
+
+\pard\li284\sl240\slmult1\b0 The following description of base 32 is derived from [\ul 11\ulnone ] (with corrections). This encoding may be reffered to as "base32".\par
+The Base 32 encoding is designed to represent arbitrary sequences of octets in a form that needs to be case insensitive but that need no be human readable.\par
+A 33-character subset of US-ASCII is used, enabling 5 bits to be represented per printable character. (The extra 33rd character, "=", is used to signify a special processing function.)\par
+The encoding process represents 40-bit groups of input bits as output strings of 8 encoded characters. Proceeding from left to right, a 40-bit input group is formed by concatenating 5 8bit input groups. These 40 bits are then treated as 8 concatenated 5-bit groups, each of which is translated into a single character in the base 32 alphabet. When a bit stream is encoded via the base 32 encoding, the bit stream must be presumed to be ordered with the most-significant-bit first. That is, the first bit in the stream will be the high-order bit in the first 8bit byte, the eighth bit will be the low-order bit in the first 8bit byte, and so on.\par
+Each 5-bit group is used as an index into an array of 32 printable characters. The character referenced by the index is placed in the output string. These characters, identified in Table 3, below, are selected from US-ASCII digits and uppercase letters.\par
+
+\pard\li284\sl240\slmult1\qc\lang1033 Table 3 : The Base 32 Alphabet\par
+\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 0\cell 
+\pard\intbl A\cell 
+\pard\intbl\qr 9\cell 
+\pard\intbl J\cell 
+\pard\intbl\qr 18\cell 
+\pard\intbl S\cell 
+\pard\intbl\qr 27\cell 
+\pard\intbl 3\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 1\cell 
+\pard\intbl B\cell 
+\pard\intbl\qr 10\cell 
+\pard\intbl K\cell 
+\pard\intbl\qr 19\cell 
+\pard\intbl T\cell 
+\pard\intbl\qr 28\cell 
+\pard\intbl 4\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 2\cell 
+\pard\intbl C\cell 
+\pard\intbl\qr 11\cell 
+\pard\intbl L\cell 
+\pard\intbl\qr 20\cell 
+\pard\intbl U\cell 
+\pard\intbl\qr 29\cell 
+\pard\intbl 5\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 3\cell 
+\pard\intbl D\cell 
+\pard\intbl\qr 12\cell 
+\pard\intbl M\cell 
+\pard\intbl\qr 21\cell 
+\pard\intbl V\cell 
+\pard\intbl\qr 30\cell 
+\pard\intbl 6\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 4\cell 
+\pard\intbl E\cell 
+\pard\intbl\qr 13\cell 
+\pard\intbl N\cell 
+\pard\intbl\qr 22\cell 
+\pard\intbl W\cell 
+\pard\intbl\qr 31\cell 
+\pard\intbl 7\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 5\cell 
+\pard\intbl F\cell 
+\pard\intbl\qr 14\cell 
+\pard\intbl O\cell 
+\pard\intbl\qr 23\cell 
+\pard\intbl X\cell 
+\pard\intbl\qr\cell 
+\pard\intbl\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 6\cell 
+\pard\intbl G\cell 
+\pard\intbl\qr 15\cell 
+\pard\intbl P\cell 
+\pard\intbl\qr 24\cell 
+\pard\intbl Y\cell 
+\pard\intbl\qr (pad)\cell 
+\pard\intbl =\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 7\cell 
+\pard\intbl H\cell 
+\pard\intbl\qr 16\cell 
+\pard\intbl Q\cell 
+\pard\intbl\qr 25\cell 
+\pard\intbl Z\cell 
+\pard\intbl\qr\cell 
+\pard\intbl\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 8\cell 
+\pard\intbl I\cell 
+\pard\intbl\qr 17\cell 
+\pard\intbl R\cell 
+\pard\intbl\qr 26\cell 
+\pard\intbl 2\cell 
+\pard\intbl\qr\cell 
+\pard\intbl\cell\row 
+\pard\li284\sl240\slmult1\lang1049 Special processing is performed if fewer than 40 bits are available at the end of the data being encoded. A full encoding quantum is always completed at the end of a body. When fewer than 40 input bits are available in an input group, bits with value zero are added (on the right) to form an integtal number of 5-bit groups. Padding at the end of the data is performed using the "=" character. Since all base 32 input is an integtal number of octets, only the following cases can arise :\par
+
+\pard\fi-284\li568\sl240\slmult1 (1) The final quantum of encoding input is an integral multiple of 40 bits; here, the final unit of encoded output will be an integral multiple of 8 characters with no "=" padding.\par
+(2) The final quantum of encoding input is exactly 8 bits; here, the final unit of encoded output will be two characters followed by six "=" padding characters.\par
+(3) The final quantum of encoding input is exactly 16 bits; here, the final unit of encoded output will be four characters followed by four "=" padding characters.\par
+(4) The final quantum of encoding input is exactly 24 bits; here, the final unit of encoded output will be five characters followed by three "=" padding characters.\par
+(5) The final quantum of encoding input is exactly 32 bits; here, the final unit of encoded output will be seven characters followed by one "=" padding character.\par
+\par
+
+\pard\sl360\slmult1\ul\b 7\ulnone . Base 32 Encoding with Extended Hex Alphabet\par
+
+\pard\li284\sl240\slmult1\b0 The following description of base 32 is derived from [\ul 7\ulnone ]. This encoding may be referred to as "base32hex". This encoding should not be regarded as the same as the "base32" encoding and should not be referred to as only "base32". This encoding is used by, e.g., NextSECure3 (NSEC3) [\ul 10\ulnone ].\par
+One property with this alphabet, which the base64 and base32 alphabets lack, is that encoded data maintains its sort order when the encoded data is compared bit-wise.\par
+This encoding is identical to the previous one, except for the alphabet. The new alphabet is found in Table 4.\par
+
+\pard\li284\sl240\slmult1\qc\lang1033 Table 4 : The "Extended Hex" Base 32 Alphabet\par
+\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 0\cell 
+\pard\intbl 0\cell 
+\pard\intbl\qr 9\cell 
+\pard\intbl 9\cell 
+\pard\intbl\qr 18\cell 
+\pard\intbl I\cell 
+\pard\intbl\qr 27\cell 
+\pard\intbl R\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 1\cell 
+\pard\intbl 1\cell 
+\pard\intbl\qr 10\cell 
+\pard\intbl A\cell 
+\pard\intbl\qr 19\cell 
+\pard\intbl J\cell 
+\pard\intbl\qr 28\cell 
+\pard\intbl S\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 2\cell 
+\pard\intbl 2\cell 
+\pard\intbl\qr 11\cell 
+\pard\intbl B\cell 
+\pard\intbl\qr 20\cell 
+\pard\intbl K\cell 
+\pard\intbl\qr 29\cell 
+\pard\intbl T\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 3\cell 
+\pard\intbl 3\cell 
+\pard\intbl\qr 12\cell 
+\pard\intbl C\cell 
+\pard\intbl\qr 21\cell 
+\pard\intbl L\cell 
+\pard\intbl\qr 30\cell 
+\pard\intbl U\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 4\cell 
+\pard\intbl 4\cell 
+\pard\intbl\qr 13\cell 
+\pard\intbl D\cell 
+\pard\intbl\qr 22\cell 
+\pard\intbl M\cell 
+\pard\intbl\qr 31\cell 
+\pard\intbl V\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 5\cell 
+\pard\intbl 5\cell 
+\pard\intbl\qr 14\cell 
+\pard\intbl E\cell 
+\pard\intbl\qr 23\cell 
+\pard\intbl N\cell 
+\pard\intbl\qr\cell 
+\pard\intbl\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 6\cell 
+\pard\intbl 6\cell 
+\pard\intbl\qr 15\cell 
+\pard\intbl F\cell 
+\pard\intbl\qr 24\cell 
+\pard\intbl O\cell 
+\pard\intbl\qr (pad)\cell 
+\pard\intbl =\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 7\cell 
+\pard\intbl 7\cell 
+\pard\intbl\qr 16\cell 
+\pard\intbl G\cell 
+\pard\intbl\qr 25\cell 
+\pard\intbl P\cell 
+\pard\intbl\qr\cell 
+\pard\intbl\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 8\cell 
+\pard\intbl 8\cell 
+\pard\intbl\qr 17\cell 
+\pard\intbl H\cell 
+\pard\intbl\qr 26\cell 
+\pard\intbl Q\cell 
+\pard\intbl\qr\cell 
+\pard\intbl\cell\row 
+\pard\li284\sl240\slmult1\lang1049\par
+
+\pard\sl360\slmult1\ul\b 8\ulnone . Base 16 Encoding\par
+
+\pard\li142\sl240\slmult1\b0 The following description is original but analogous to previous descriptions. Essentially, Base 16 encoding is the standard case-insensitive hex encoding and may be referred to as "base16" or "hex".\par
+A 16-character subset of US-ASCII is used, enabling 4 bits to be represented per printable character.\par
+The encoding process represents 8-bit groups (octets) of input bits as output strings of 2 encoded characters. Proceeding from left to right, an 8-bit input is taken from the input data. These 8 bits are then treated as 2 concatenated 4-bit groups, each of which is translated into a single character in the base 16 alphabet.\par
+Each 4-bit group is used as an index into an array of 16 printable characters. The character referenced by the index is placed in the output string.\par
+
+\pard\li142\sl240\slmult1\qc Table 5 : The Base 16 Alphabet\par
+\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr\lang1033 Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell 
+\pard\intbl\qr Value\cell 
+\pard\intbl Encoding\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 0\cell 
+\pard\intbl 0\cell 
+\pard\intbl\qr 4\cell 
+\pard\intbl 4\cell 
+\pard\intbl\qr 8\cell 
+\pard\intbl 8\cell 
+\pard\intbl\qr 12\cell 
+\pard\intbl C\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 1\cell 
+\pard\intbl 1\cell 
+\pard\intbl\qr 5\cell 
+\pard\intbl 5\cell 
+\pard\intbl\qr 9\cell 
+\pard\intbl 9\cell 
+\pard\intbl\qr 13\cell 
+\pard\intbl D\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 2\cell 
+\pard\intbl 2\cell 
+\pard\intbl\qr 6\cell 
+\pard\intbl 6\cell 
+\pard\intbl\qr 10\cell 
+\pard\intbl A\cell 
+\pard\intbl\qr 14\cell 
+\pard\intbl E\cell\row\trowd\trgaph72\trleft59\trqc\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx797\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx1927\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx2622\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx3677\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx4402\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx5427\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6137\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7357 
+\pard\intbl\qr 3\cell 
+\pard\intbl 3\cell 
+\pard\intbl\qr 7\cell 
+\pard\intbl 7\cell 
+\pard\intbl\qr 11\cell 
+\pard\intbl B\cell 
+\pard\intbl\qr 15\cell 
+\pard\intbl F\cell\row 
+\pard\li142\sl240\slmult1\lang1049 Unlike base 32 and base 64, no special padding is necessary since a full code word is always available.\par
+\par
+
+\pard\sl360\slmult1\ul\b 9\ulnone . Illustrations and Examples\par
+
+\pard\li284\sl240\slmult1\b0 To translated between binary  and a base encoding, the input is stored in a structure, and the output is extracted. The case for base 64 is displayed in the following figure, borrowed from [\ul 5\ulnone ].\par
+\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6022 
+\pard\intbl\sl240\slmult1\f2\u9487?\u9473?\f1  first octet \f2\u9473?\u9523?\f1  second octer \f2\u9473?\u9523?\u9473?\f1  third octet \f2\u9473?\u9491?\f1\par
+\f2\u9475?\f1 7 6 5 4 3 2 1 0\f2\u9475?\f1 7 6 5 4 3 2 1 0\f2\u9475?\f1 7 6 5 4 3 2 1 0\f2\u9475?\f1\par
+\f2\u9507?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9523?\u9473?\u9473?\u9473?\u9531?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9523?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9531?\u9473?\u9473?\u9473?\u9523?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9515?\f1\line\f2\u9475?\f1 5 4 3 2 1 0\f2\u9475?\f1 5 4 3 2 1 0\f2\u9475?\f1 5 4 3 2 1 0\f2\u9475?\f1 5 4 3 2 1 0\f2\u9475?\f1\par
+\f2\u9495?\u9473?\f1  1.index \f2\u9473?\u9531?\u9473?\f1  2.index \f2\u9473?\u9531?\u9473?\f1  3.index \f2\u9473?\u9531?\u9473?\f1  4.index \f2\u9473?\u9499?\f1\cell\row 
+\pard\li284\sl240\slmult1\f0 The case for base 32 is shown in the following figure, borrowed from [\ul 7\ulnone ]. Each successive character in a base-32 value represents 5 successive bits of the underlying octet sequence. Thus, each group of 8 character represents a sequence of 5 octets (40 bits).\par
+\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7134 
+\pard\intbl\f1             1          2          3\par
+ 01234567 89012345 67890123 45678901 23456789\par
+\f2\u9487?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9523?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9523?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9523?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9523?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9491?\f1\line\f2\u9475?\f1 < 1 >< 2\f2\u9475?\f1  >< 3 ><\f2\u9475?\f1 .4 >< 5.\f2\u9475?\f1 >< 6 ><.\f2\u9475?\f1 7 >< 8 >\f2\u9475?\f1\par
+\f2\u9495?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9531?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9531?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9531?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9531?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9473?\u9499?\f1\line                                         <\f2\u9552?\u9552?\u9552?\f1 > 8th character\par
+                                  <\f2\u9552?\u9552?\u9552?\u9552?\f1 > 7th character\par
+                             <\f2\u9552?\u9552?\u9552?\f1 > 6th character\par
+                       <\f2\u9552?\u9552?\u9552?\u9552?\f1 > 5th character\par
+                 <\f2\u9552?\u9552?\u9552?\u9552?\f1 > 4th character\par
+            <\f2\u9552?\u9552?\u9552?\f1 > 3nd character\par
+      <\f2\u9552?\u9552?\u9552?\u9552?\f1 > 2nd character\par
+ <\f2\u9552?\u9552?\u9552?\f1 > 1st character\f0\cell\row 
+\pard\li284\sl240\slmult1 The following example of Base64 data is from [\ul 5\ulnone ], with corrections.\par
+\trowd\trgaph72\trleft568\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx7858 
+\pard\intbl\f1 Input data:  0x14fb9c03d97e\par
+Hex:     1   4    f   b    9  c      | 0   3    d   9    7   e\par
+8-bit:   00010100 11111011 10011100  | 00000011 11011001 01111110\par
+6-bit:   000101 001111 101110 011100 | 000000 111101 100101 111110\par
+Decimal: 5      15     46     28       0      61     37     62   \par
+Output:  F      P      u      c        A      9      1      +\par
+\par
+Input data:\f3   0\f1\lang1033 x14fb9c03d9\lang1049\par
+Hex:     1   4    f   b    9   c     | 0   3    d   9\par
+8-bit:   00010100 11111011 10011100  | 00000011 11011001\par
+                                                pad with 00\par
+6-bit:   000101 001111 101110 011100 | 000000 111101 100100\par
+Decimal: 5      15     46     28       0      61     36\par
+                                                   pad with =\par
+Output:  F      P      u      c        A      9      k      =\par
+\par
+Input data:  0x14fb9c03\par
+Hex:     1   4    f   b    9   c     | 0   3\par
+8-bit:   00010100 11111011 10011100  | 00000011\par
+                                       pad with 0000\par
+6-bit:   000101 001111 101110 011100 | 000000 110000\par
+Decimal: 5      15     46     28       0      48\par
+                                            pad with =\lang1033       =\lang1049\par
+Output:  F      P      u      c        A      w      =\lang1033       =\lang1049\cell\row 
+\pard\li284\sl240\slmult1\f0\par
+
+\pard\sl360\slmult1\ul\b 10\ulnone . Test Vectors\par
+\trowd\trgaph72\trleft59\trpaddl72\trpaddr72\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw1\brdrs\clbrdrt\brdrw1\brdrs\clbrdrr\brdrw1\brdrs\clbrdrb\brdrw1\brdrs \cellx6632 
+\pard\intbl\b0\f1\lang1033 BASE64("") = ""\par
+BASE64("f") = "Zg=="\par
+BASE64("fo") = "Zm8="\par
+BASE64("foo") = "Zm9v"\par
+BASE64("foob") = "Zm9vYg=="\par
+BASE64("fooba") = "Zm9bYme="\par
+BASE64("foobar") = "Zm9vYmFy"\par
+BASE32("") = ""\par
+BASE32("f") = "MY======"\par
+BASE32("fo") = "MZXQ===="\par
+BASE32("foo") = "MZXWG==="\par
+BASE32("foob") = "MZXW6YQ="\par
+BASE32("fooba") = "MZXW6YTB"\par
+BASE32("foobar") = "MZXW6YTBOI======"\par
+BASE32-HEX("") = ""\par
+BASE32-HEX("f") = "CO======"\par
+BASE32-HEX("fo") = "CPNG===="\par
+BASE32-HEX("foo") = "CPNMU==="\par
+BASE32-HEX("foob") = "CPNMUOG="\par
+BASE32-HEX("fooba") = "CPNMUOJ1"\par
+BASE32-HEX("foobar") = "CPNMUOJ1E8======"\par
+BASE16("") = ""\par
+BASE16("f") = "66"\par
+BASE16("fo") = "666F"\par
+BASE16("foo") = "666F6F"\par
+BASE16("foob") = "666F6F62"\par
+BASE16("fooba") = "666F6F6261"\par
+BASE16("foobar") = "666F6F626172"\f0\lang1049\cell\row 
+\pard\li284\sl240\slmult1\par
+
+\pard\sl360\slmult1\ul\b 11\ulnone . ISO C99 Implementation of Base64\par
+
+\pard\li284\sl240\slmult1\b0 An ISO C99 implementation of Base64 encoding and decoding that is believe to follow all recommendations in this RFC is available from : \ul http://josefsson.org/base-encoding/\par
+\ulnone This code is not normative.\par
+The code could not be included in this RFC for procedural reasons (\ul RFC 3978 section 5.4\ulnone ).\par
+\par
+
+\pard\sl360\slmult1\ul\b 12\ulnone . Security Considerations\par
+
+\pard\li284\sl240\slmult1\b0\lang1033 When base encoding and decoding is implemeted, care should be taken not to introducd vulnerabilities to buffer overflow attacks, or other attacks on the implementation. A decoder should not break on invalid input including, e.g., embedded NUL characters (ASCII 0).\par
+If non-alphabet characters are ignored, instead of causeing rejection of the entire encoding (as recommended), a covert channel that can be used to "leak" information is made possible. The ignored characters could also be used for other nefarious purposes, such as to avoid a string equality comparison or to trigger implementation bugs. The implications of ignoring non-alphabet characters should be understood in applications that do not follow the recommend practice. Similarly, when the base 16 and base 32 alphabet are handled case insensitively, alteration of case can be used to leak information or make string equality comparisons fail.\par
+When padding is used, there are some non-significant bits that warrant security concerns, as they may abused to leak information or used to bypass string equality comparisons or to trigger implementation problems.\par
+Base encoding visually hides otherwise easily recognized information, such as passwords, but does not provide any computational confidentialityl This has been known to cause security incidents when, e.g., a user reports details of a network protocol exchange (perhaps to illustrate some other problem) and accidentally reveals the password because she is unaware that the base encoding does not protect the password.\par
+Base encoding adds no entropy to the plaintext, but it does increase the amount of plaintext available and provide a signature for cryptanalysis in the form of a characteristic probability distribution.\par
+\par
+
+\pard\sl360\slmult1\ul\b\lang1049 13\ulnone . Changes Since RFC 3548\par
+
+\pard\li284\sl240\slmult1\b0 Added the "base32 extended hex alphabet", needed to preserve sort order of encoded data.\par
+Referenced IMAP for the special Base64 encoding used there.\par
+Fixed the example copied from RFC 2440.\par
+Added security consideration about providing a signature for cryptoanalysis.\par
+Added test vectors.\par
+Fixed typos.\par
+\par
+
+\pard\sl360\slmult1\ul\b 14\ulnone . Acknowledgements\b0\par
+
+\pard\li284\sl240\slmult1 Several people offered comments and/or suggestions, including John E. Hadstate, Tony Hansen, Gordon Mohr, John Myers, Chris Newman, and Andrew Sieber. Text used in this document are based on earlier RFCs describing specific uses of various base encoding. The author acknowledges the RSA Laboratories for supporting the work that led to this documents.\par
+This revised version is based in parts on comments and/or suggestions made by Roy Arends, Eric Blake, Brian E Carpenter, Elwyn Davies, Bill Fenner, Sam Hartman, Red Hardie, Per Hygum, Jelte Jansen, Clement Kent, Tero Kivinen, Paul Kwiatkowski, and Ben Laurie.\par
+Adel'gid Aragami, the author of MASTER library, is rewrote this document from scratch using touch typing in RTF format.\par
+\par
+
+\pard\sl360\slmult1\ul\b 15\ulnone . Copying Conditions\b0\par
+
+\pard\li284\sl240\slmult1 Copyright (c) 2000-2006 Simon Josefsson\par
+Regarding the abstract and sections \ul 1\ulnone , \ul 3\ulnone , \ul 8\ulnone , \ul 10\ulnone , \ul 12\ulnone , \ul 13\ulnone , and \ul 14\ulnone  of this document, that were written by Simon Josefsson ("the author", for the remainder of this section), the author makes no guarantees and is not responsible for any damage resulting from its use. The author grants irrevocable permission to anyone to use, modify, and distribute it in any way that does not diminish the rights of anyone else to use, modify, and distribute it, provided that redistributed derivative works do not contain misleading author or version information and do not falsely purport to be IETF RFC documents. Deribative works need not be licensed under similar terms.\par
+\par
+
+\pard\sl360\slmult1\ul\b 16\ulnone . References\par
+
+\pard\li284\sl360\slmult1\ul\b0 16.1\ulnone . Normative References\par
+
+\pard\fi-284\li852\sl240\slmult1 [\ul 1\ulnone ] Cerf, V., "ASCII format for network interchange", RFC 20, October 1969.\par
+[\ul 2\ulnone ] Bradner, S., "Key words for use in RFCs to Indicate Requirement Levels", \ul BCP 14\ulnone , \ul RFC 2119\ulnone , March 1997.\par
+
+\pard\li284\sl360\slmult1\ul 16.2\ulnone . Informative References\par
+
+\pard\fi-284\li852\sl240\slmult1 [\ul 3\ulnone ] Linn, J., "Privacy Enhancement for Internet Electronic Mail : Part I : Message Encryption and Authentication Procedures", \ul RFC 1421\ulnone , February 1993.\par
+[\ul 4\ulnone ] Freed, N. and N. Borenstein, "Multipurpose Internet Mail Extensions (MIME) Part One : Format of Internet Message Bodies", \ul RFC 2045\ulnone , November 1996.\par
+[\ul 5\ulnone ] Callas, J., Donnerhacke, L., Finney, H., and R. Thayer, "OpenPGP Message Format", \ul RFC 2440\ulnone , November 1998.\par
+[\ul 6\ulnone ] Arends, R., Austein, R., Larson, M., Massey, D., and S. Rose, "DNS Security Introduction and Requirements", \ul RFC 4033\ulnone , March 2005.\par
+[\ul 7\ulnone ] Klyne, G. and L. Masinter, "Identifying Composite Media Features", \ul RFC 2938\ulnone , September 2000.\par
+[\ul 8\ulnone ] Crispin, M., "INTERNET MESSAGE ACCESS PROTOCOL - VERSION 4rev1", \ul RFC 3501\ulnone , March 2003.\par
+[\ul 9\ulnone ] Berners-Lee, T., Fielding, R., and L. Masinter, "Uniform Resourse Indentifier (URI) : Generic Syntax", STD 66, \ul RFC 3986\ulnone , January 2005.\par
+[\ul 10\ulnone ] Laurie, B., Sisson, G., Arends, R., and D. Blacka, "DNSSEC Hash Authenticated Denial of Existence", Work in Progress, June 2006.\par
+[\ul 11\ulnone ] Myers, J., "SASL GSSAPI mechanisms", Work in Progress, May 2000.\par
+[\ul 12\ulnone ] Wilcox-O'Hearn, B., "Post to P2P-hackers mailing list", \ul http://zgp.org/pipermail/p2p-hackers/2001-September/000315.html\ulnone , September 2001.\par
+\ul\par
+
+\pard\sl360\slmult1\ulnone Author's Address\par
+
+\pard\li284\sl240\slmult1 Simon Josefsson\par
+SJD\par
+EMail : simon@josefsson.org\par
+\par
+
+\pard\sl360\slmult1 Full Copyright Statement\par
+
+\pard\li284\sl240\slmult1 Copyright (C) The Internet Society  (2006)\par
+This document is subject ro the rights, licenses and restrictions contained in \ul BCP 78\ulnone , and except as set forth therein, the authors retain all their rights.\par
+This document and the information contained herein are provided on an "AS IS" basis and THE CONRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIES, INCLUDING BUIT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OR MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.\par
+\par
+
+\pard\sl360\slmult1 Intellectual Property\par
+
+\pard\li284\sl240\slmult1 The IETF takes no position regarding the validity or scope of any Intellectual Property Rights or other rights that might be claimed to pertain to the implementation or use of the technology described in this document or the extent to which any license under such rights might or might not be available; nor does it represent that if has made any independent effort to identify any such rights. Information on the procedures with respect to rights in RFC documents can be found in \ul BCP 78\ulnone  and \ul BCP 79\ulnone .\par
+Copies of IPR disclosures made to the IETF Secretariat and any assurances of licenses to be made available, or the result of an attempt to obtain a general license or permission for use of such proprietary rights by implementers or users of this specification can be obtained from the IETF on-line IPR repository at \ul http://www.ieft.org/ipr\ulnone .\par
+The IETF invited any interested party to bring to its attention any copyrights, patents or patent application, or other proprietary rights that may cover technology that be required to implement this standard. Please address the information to the IETF at ietf-ipr@ietf.org.\par
+\par
+
+\pard\sl360\slmult1 Acknowledgement\par
+
+\pard\li284\sl240\slmult1 Funding for the RFC Editor function is provided by the IETF Administrative Support Activity (IASA).\par
+}
+ 
