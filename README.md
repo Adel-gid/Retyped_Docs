@@ -15,7 +15,7 @@ retyping. For authoritative versions, refer to the official sources.
 
 |[RFC1950](./rfc1950.rtf)|[RFC1951](./rfc1951.rtf)|[RFC1952](./rfc1952.rtf)|[RFC2104](./rfc2104.rtf)|
 |-|-|-|-|
-|[RFC4648](./rfc4648.rtf)|-|-|-|
+|[**RFC4648**](./rfc4648.rtf)|-|-|-|
 |-|-|-|-|
 |-|-|-|-|
 
